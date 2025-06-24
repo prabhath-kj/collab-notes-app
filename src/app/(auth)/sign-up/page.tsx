@@ -1,0 +1,117 @@
+'use client'
+
+import { IUserSignUp } from "@/lib/types"
+import { UserSignUpSchema } from "@/lib/validator"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from "sonner"
+import { registerUser } from "@/lib/actions/user.actions"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+
+export default function RegisterPage() {
+    const router = useRouter()
+    //   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+    //   useEffect(() => {
+    //     if (isAuthenticated) router.push('/')
+    //   }, [isAuthenticated, router])
+
+    const form = useForm<IUserSignUp>({
+        resolver: zodResolver(UserSignUpSchema),
+        defaultValues: { name: '', email: '', password: '' },
+    })
+
+    const onSubmit = async (data: IUserSignUp) => {
+        try {
+            const res = await registerUser(data)
+
+            if (!res?.success) {
+                toast.warning(res.message || 'Something went wrong')
+                return
+            }
+
+            toast.success('Registered successfully!')
+            form.reset()
+            router.push('/sign-in')
+        } catch (err: any) {
+            toast.error(err?.message || 'Unexpected error occurred')
+        }
+    }
+
+    return (
+        <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+            <div className="w-full max-w-md bg-white  rounded-2xl shadow-sm p-8 space-y-6">
+                <div className="text-center">
+                    <h1 className="text-2xl font-semibold text-gray-900">Create your account</h1>
+                    <p className="text-sm text-gray-500 mt-1">Start collaborating on notes</p>
+                </div>
+
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Your name" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="you@example.com" type="email" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="••••••••" type="password" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <Button type="submit" className="w-full rounded-md">
+                            {form.formState.isSubmitting ? 'Creating...' : 'Sign Up'}
+                        </Button>
+                    </form>
+                </Form>
+
+                <p className="text-sm text-center text-gray-500">
+                    Already have an account?{' '}
+                    <Link href="/sign-in" className="text-blue-600 hover:underline">
+                        Sign in
+                    </Link>
+                </p>
+            </div>
+        </main>
+    )
+}
