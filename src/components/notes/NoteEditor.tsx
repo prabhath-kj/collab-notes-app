@@ -20,17 +20,20 @@ import {
   Undo2,
   Redo2,
 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import EditorButton from './EditorButton'
+import socket from '@/lib/socket'
 
 interface Props {
   content: string
   onChange: (html: string) => void
-  onAutoSave?: (html: string) => void // 🔁 Optional callback for autosave
+  onAutoSave?: (html: string) => void
+  noteId: string // 👈 required for socket rooms
 }
 
 const NoteEditor = forwardRef((props: Props, ref) => {
-  const { content, onChange, onAutoSave } = props
+  const { content, onChange, onAutoSave, noteId } = props
 
   const debouncedSave = useRef(
     debounce((html: string) => {
@@ -45,6 +48,8 @@ const NoteEditor = forwardRef((props: Props, ref) => {
       const html = editor.getHTML()
       onChange(html)
       debouncedSave(html)
+
+      socket.emit('note-changed', { noteId, content: html })
     },
     autofocus: true,
     editorProps: {
@@ -54,15 +59,35 @@ const NoteEditor = forwardRef((props: Props, ref) => {
     },
   })
 
-  useImperativeHandle(ref, () => ({
-    getHTML: () => editor?.getHTML() || '',
-  }))
-
+  // Set content from server
   useEffect(() => {
     if (editor && content) {
       editor.commands.setContent(content)
     }
   }, [editor, content])
+
+  useEffect(() => {
+    if (!noteId || !editor) return
+
+    socket.emit('join-note', noteId)
+
+    const handleRemoteUpdate = (newContent: string) => {
+      const currentContent = editor.getHTML()
+      if (newContent !== currentContent) {
+        editor.commands.setContent(newContent)
+      }
+    }
+
+    socket.on('note-update', handleRemoteUpdate)
+
+    return () => {
+      socket.off('note-update', handleRemoteUpdate)
+    }
+  }, [noteId, editor])
+
+  useImperativeHandle(ref, () => ({
+    getHTML: () => editor?.getHTML() || '',
+  }))
 
   if (!editor) return null
 
@@ -119,4 +144,3 @@ const NoteEditor = forwardRef((props: Props, ref) => {
 
 NoteEditor.displayName = 'NoteEditor'
 export default NoteEditor
-

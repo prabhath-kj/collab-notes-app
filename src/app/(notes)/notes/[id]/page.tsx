@@ -104,6 +104,7 @@ export default function NoteEditorPage() {
                         setContent(html)
                         debouncedSave(title, html)
                     }}
+                    noteId={id as string}
                 />
             </div>
         </div>
