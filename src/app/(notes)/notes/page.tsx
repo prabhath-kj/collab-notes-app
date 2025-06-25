@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useAuthStore } from '@/hooks/use.authStore'
 
 interface Note {
     _id: string
@@ -20,11 +21,12 @@ export default function NotesDashboard() {
     const [notes, setNotes] = useState<Note[]>([])
     const [search, setSearch] = useState('')
     const router = useRouter()
+    const token = useAuthStore.getState().token
+    const logout = useAuthStore((s) => s.logout)
 
     useEffect(() => {
         const fetchNotes = async () => {
-            const token = localStorage.getItem('token') || ''
-            const res = await getMyNotes(token)
+            const res = await getMyNotes(token || '')
             if (res.success) setNotes(res.notes)
             else toast.error(res.message)
         }
@@ -32,15 +34,15 @@ export default function NotesDashboard() {
     }, [])
 
     const handleNewNote = async () => {
-        const token = localStorage.getItem('token') || ''
-        const res = await createNote(token, 'Untitled')
+        const res = await createNote(token || '', 'Untitled')
         if (res.success) router.push(`/notes/${res.note._id}`)
         else toast.error(res.message)
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('token')
+        logout()
         router.push('/sign-in')
+
     }
 
     const filteredNotes = notes.filter((note) =>

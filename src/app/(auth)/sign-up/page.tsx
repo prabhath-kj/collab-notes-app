@@ -18,14 +18,16 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useAuthStore } from "@/hooks/use.authStore"
+import { useEffect } from "react"
 
 export default function RegisterPage() {
     const router = useRouter()
-    //   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+      const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-    //   useEffect(() => {
-    //     if (isAuthenticated) router.push('/')
-    //   }, [isAuthenticated, router])
+      useEffect(() => {
+        if (isAuthenticated) router.push('/notes')
+      }, [isAuthenticated, router])
 
     const form = useForm<IUserSignUp>({
         resolver: zodResolver(UserSignUpSchema),

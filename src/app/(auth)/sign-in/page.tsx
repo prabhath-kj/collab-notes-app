@@ -19,10 +19,18 @@ import {
 import { IUserSignIn } from '@/lib/types'
 import { UserSignInSchema } from '@/lib/validator'
 import { loginUser } from '@/lib/actions/user.actions'
+import { useAuthStore } from '@/hooks/use.authStore'
+import { useEffect } from 'react'
 
 export default function SignInPage() {
   const router = useRouter()
-//   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  useEffect(() => {
+    if (isAuthenticated) router.push('/notes')
+  }, [isAuthenticated, router])
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
 
   const form = useForm<IUserSignIn>({
     resolver: zodResolver(UserSignInSchema),
@@ -37,8 +45,7 @@ export default function SignInPage() {
         toast.warning(res.message || 'Invalid credentials')
         return
       }
-
-      localStorage.setItem('token', res.token||'') 
+      setAuthenticated(true, res?.token)
       toast.success('Logged in successfully!')
       router.push('/notes')
     } catch (err: any) {
