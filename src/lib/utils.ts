@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import jwt from 'jsonwebtoken'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,5 +27,17 @@ export const formatError = (error: any): string => {
     return typeof error.message === 'string'
       ? error.message
       : JSON.stringify(error.message)
+  }
+}
+
+
+
+
+export const getUserIdFromToken = (token: string): string | null => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string }
+    return decoded.id
+  } catch {
+    return null
   }
 }
