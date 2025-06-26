@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "ts-node server.mts",
+    "dev": "next dev",
     "dev:socket": "set NODE_OPTIONS=--loader ts-node/esm --trace-warnings --no-warnings && ts-node server.mts",
     "build": "next build",
     "start": "next start",
