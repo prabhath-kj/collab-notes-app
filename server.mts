@@ -3,11 +3,10 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname ="localhost"
+const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
-const app = next({ dev ,hostname,port});
+const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
-
 
 app.prepare().then(() => {
   const httpServer = createServer(handle);
@@ -20,9 +19,13 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     socket.on("join-note", (noteId: string) => {
       socket.join(noteId);
-      console.log(`📄 User joined note ${noteId}`);
+      console.log(`User joined note ${noteId}`);
     });
-
+    socket.on("title-changed", ({ noteId, title }) => {
+      console.log(noteId,title);
+      
+      socket.to(noteId).emit("title-update", title);
+    });
     socket.on("note-changed", ({ noteId, content }) => {
       socket.to(noteId).emit("note-update", content);
     });

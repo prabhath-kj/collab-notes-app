@@ -2,6 +2,7 @@
 
 import { connectToDatabase } from "../db";
 import { Note } from "../db/models/note.model";
+import { User } from "../db/models/user.model";
 import { formatError, getUserIdFromToken } from "../utils";
 
 export const createNote = async (token: string, title: string) => {
@@ -104,6 +105,46 @@ export const updateNote = async (
       ),
     };
   } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+};
+
+export const shareNote = async (
+  token: string,
+  noteId: string,
+  recipientEmail: string,
+  role: "editor" | "viewer"
+) => {
+  try {
+    await connectToDatabase();
+    const userId = getUserIdFromToken(token);
+    if (!userId) {
+      return { success: false, message: "Invalid or expired token" };
+    }
+    const userToShareWith = await User.findOne({ email: recipientEmail });
+    if (!userToShareWith) {
+      return { success: false, message: "User not found" };
+    }
+
+    const note = await Note.findById(noteId);
+    if (!note) {
+      return { success: false, message: "Note not found" };
+    }
+
+    const alreadyShared = note.sharedWith.find(
+      (entry: { userId: { toString: () => any } }) =>
+        entry.userId.toString() === userToShareWith._id.toString()
+    );
+    if (alreadyShared) {
+      return { success: false, message: "Already shared with this user" };
+    }
+
+    note.sharedWith.push({ userId: userToShareWith._id, role });
+    await note.save();
+
+    return { success: true, message: "Note shared successfully" };
+  } catch (error) {
+    console.error(error);
     return { success: false, message: formatError(error) };
   }
 };
