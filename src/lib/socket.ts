@@ -1,7 +1,10 @@
-import { io } from 'socket.io-client'
+import { io, Socket } from 'socket.io-client'
 
-const socket = io('http://localhost:3000', {
-  path: '/api/socket',
-})
+let socket: Socket
 
-export default socket
+export const connectSocket = () => {
+  if (!socket) {
+    socket = io()
+  }
+  return socket
+}

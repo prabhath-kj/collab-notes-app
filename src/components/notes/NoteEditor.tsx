@@ -23,7 +23,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import EditorButton from './EditorButton'
-import socket from '@/lib/socket'
+import { connectSocket } from '@/lib/socket'
 
 interface Props {
   content: string
@@ -34,6 +34,7 @@ interface Props {
 
 const NoteEditor = forwardRef((props: Props, ref) => {
   const { content, onChange, onAutoSave, noteId } = props
+    const socket = connectSocket()
 
   const debouncedSave = useRef(
     debounce((html: string) => {
@@ -68,6 +69,7 @@ const NoteEditor = forwardRef((props: Props, ref) => {
 
   useEffect(() => {
     if (!noteId || !editor) return
+    const socket = connectSocket()
 
     socket.emit('join-note', noteId)
 
