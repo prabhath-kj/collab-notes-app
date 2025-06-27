@@ -23,12 +23,6 @@ import { useEffect } from "react"
 
 export default function RegisterPage() {
     const router = useRouter()
-      const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
-      useEffect(() => {
-        if (isAuthenticated) router.push('/notes')
-      }, [isAuthenticated, router])
-
     const form = useForm<IUserSignUp>({
         resolver: zodResolver(UserSignUpSchema),
         defaultValues: { name: '', email: '', password: '' },
