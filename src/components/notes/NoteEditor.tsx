@@ -32,9 +32,15 @@ const NoteEditor = forwardRef((props: Props, ref) => {
   const [emailToShare, setEmailToShare] = useState('')
   const [roleToShare, setRoleToShare] = useState<'editor' | 'viewer'>('viewer')
   const token = useAuthStore.getState().token
+  const user = useAuthStore.getState().user
 
   const isReadOnly = role === 'viewer'
 
+  // New for live collaboration
+  const [onlineUsers, setOnlineUsers] = useState<{ name: string; email: string }[]>([])
+  const [typingUser, setTypingUser] = useState<string>('')
+
+  // Share functionality
   const handleShare = async () => {
     const res = await shareNote(token || '', noteId, emailToShare, roleToShare)
     if (res.success) {
@@ -45,12 +51,14 @@ const NoteEditor = forwardRef((props: Props, ref) => {
     }
   }
 
+  // Autosave
   const debouncedSave = useRef(
     debounce((html: string) => {
       if (onAutoSave && !isReadOnly) onAutoSave(html)
     }, 2000)
   ).current
 
+  // Editor init
   const editor = useEditor({
     editable: !isReadOnly,
     extensions: [StarterKit],
@@ -61,6 +69,7 @@ const NoteEditor = forwardRef((props: Props, ref) => {
       onChange(html)
       debouncedSave(html)
       socket.emit('note-changed', { noteId, content: html })
+      socket.emit('typing', { noteId, user: user?.name || 'Someone' })
     },
     autofocus: true,
     editorProps: {
@@ -70,29 +79,31 @@ const NoteEditor = forwardRef((props: Props, ref) => {
     },
   })
 
+  // Join room and listen for collab events
+  useEffect(() => {
+    if (!noteId) return
+    socket.emit('join-note', noteId, { name: user?.name, email: user?.email })
+
+    socket.on('user-list', (users) => {
+      setOnlineUsers(users)
+    })
+
+    socket.on('user-typing', (userName) => {
+      setTypingUser(userName)
+      setTimeout(() => setTypingUser(''), 2000)
+    })
+
+    return () => {
+      socket.off('user-list')
+      socket.off('user-typing')
+    }
+  }, [noteId, user, socket])
+
   useEffect(() => {
     if (editor && content) {
       editor.commands.setContent(content)
     }
   }, [editor, content])
-
-  useEffect(() => {
-    if (!noteId || !editor) return
-    socket.emit('join-note', noteId)
-
-    const handleRemoteUpdate = (newContent: string) => {
-      const currentContent = editor.getHTML()
-      if (newContent !== currentContent) {
-        editor.commands.setContent(newContent)
-      }
-    }
-
-    socket.on('note-update', handleRemoteUpdate)
-
-    return () => {
-      socket.off('note-update', handleRemoteUpdate)
-    }
-  }, [noteId, editor, socket])
 
   useImperativeHandle(ref, () => ({
     getHTML: () => editor?.getHTML() || '',
@@ -102,6 +113,20 @@ const NoteEditor = forwardRef((props: Props, ref) => {
 
   return (
     <div>
+      {/* Online users */}
+      <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
+        <span className="font-medium">Active users:</span>
+        {onlineUsers.length === 0 && <span>No one else here</span>}
+        {onlineUsers.map((u, i) => (
+          <span key={i} className="px-2 py-0.5 rounded bg-gray-100">{u.name}</span>
+        ))}
+      </div>
+
+      {/* Typing */}
+      {typingUser && (
+        <div className="text-xs text-blue-500 mb-2">{typingUser} is typing...</div>
+      )}
+
       {/* Toolbar */}
       {!isReadOnly && (
         <div className="flex flex-wrap gap-1 mb-4 border-b pb-2">

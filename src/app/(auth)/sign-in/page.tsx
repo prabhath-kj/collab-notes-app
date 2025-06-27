@@ -39,7 +39,7 @@ export default function SignInPage() {
         toast.warning(res.message || 'Invalid credentials')
         return
       }
-      setAuthenticated(true, res?.token)
+      setAuthenticated(true, res?.token,res?.user)
       toast.success('Logged in successfully!')
       router.push('/notes')
     } catch (err: any) {

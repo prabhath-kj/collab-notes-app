@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import debounce from 'lodash.debounce'
@@ -13,10 +13,7 @@ import { connectSocket } from '@/lib/socket'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-// Dynamically load editor (disable SSR)
-const NoteEditor = dynamic(() => import('@/components/notes/NoteEditor'), {
-  ssr: false,
-})
+const NoteEditor = dynamic(() => import('@/components/notes/NoteEditor'), { ssr: false })
 
 export default function NoteEditorPage() {
   const { id } = useParams()
@@ -32,8 +29,8 @@ export default function NoteEditorPage() {
   const [role, setRole] = useState<'owner' | 'editor' | 'viewer'>('viewer')
   const [loading, setLoading] = useState(true)
 
-  // Debounced autosave
-  const debouncedSave = useRef(
+  // Debounced autosave that respects role
+  const debouncedSave = useCallback(
     debounce(async (newTitle: string, newContent: string) => {
       if (role === 'viewer') return
       const res = await updateNote(token || '', id as string, {
@@ -46,10 +43,10 @@ export default function NoteEditorPage() {
       } else {
         toast.error(res.message)
       }
-    }, 2000)
-  ).current
+    }, 2000),
+    [id, token, role]
+  )
 
-  // Join socket room
   useEffect(() => {
     socket.emit('join-note', id)
     socket.on('title-update', (incomingTitle: string) => {
@@ -60,13 +57,10 @@ export default function NoteEditorPage() {
     }
   }, [id, socket])
 
-  // Fetch note on mount
   useEffect(() => {
     const fetchNote = async () => {
       setLoading(true)
       const res = await getNoteById(token || '', id as string)
-      console.log(res);
-      
       if (!res.success) {
         toast.error(res.message)
         router.push('/')
@@ -81,7 +75,6 @@ export default function NoteEditorPage() {
     fetchNote()
   }, [id, token, router])
 
-  // Save manually
   const handleSave = async () => {
     if (role === 'viewer') {
       toast.error('View-only access. Cannot save.')
