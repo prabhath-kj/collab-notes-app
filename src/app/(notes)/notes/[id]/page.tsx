@@ -65,6 +65,8 @@ export default function NoteEditorPage() {
     const fetchNote = async () => {
       setLoading(true)
       const res = await getNoteById(token || '', id as string)
+      console.log(res);
+      
       if (!res.success) {
         toast.error(res.message)
         router.push('/')
