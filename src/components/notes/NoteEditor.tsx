@@ -36,7 +36,7 @@ const NoteEditor = forwardRef((props: Props, ref) => {
 
   const isReadOnly = role === 'viewer'
 
-  // New for live collaboration
+  // Live presence
   const [onlineUsers, setOnlineUsers] = useState<{ name: string; email: string }[]>([])
   const [typingUser, setTypingUser] = useState<string>('')
 
@@ -58,7 +58,7 @@ const NoteEditor = forwardRef((props: Props, ref) => {
     }, 2000)
   ).current
 
-  // Editor init
+  // Editor
   const editor = useEditor({
     editable: !isReadOnly,
     extensions: [StarterKit],
@@ -84,21 +84,35 @@ const NoteEditor = forwardRef((props: Props, ref) => {
     if (!noteId) return
     socket.emit('join-note', noteId, { name: user?.name, email: user?.email })
 
+    // Listen for active users
     socket.on('user-list', (users) => {
       setOnlineUsers(users)
     })
 
+    // Listen for typing notifications
     socket.on('user-typing', (userName) => {
       setTypingUser(userName)
       setTimeout(() => setTypingUser(''), 2000)
     })
 
+    // Listen for remote content updates
+    const handleRemoteUpdate = (newContent: string) => {
+      if (!editor) return
+      const currentContent = editor.getHTML()
+      if (newContent !== currentContent) {
+        editor.commands.setContent(newContent)
+      }
+    }
+    socket.on('note-update', handleRemoteUpdate)
+
     return () => {
       socket.off('user-list')
       socket.off('user-typing')
+      socket.off('note-update', handleRemoteUpdate)
     }
-  }, [noteId, user, socket])
+  }, [noteId, user, editor, socket])
 
+  // Sync initial content if prop changes
   useEffect(() => {
     if (editor && content) {
       editor.commands.setContent(content)
@@ -144,7 +158,7 @@ const NoteEditor = forwardRef((props: Props, ref) => {
       {/* Editor */}
       <EditorContent editor={editor} />
 
-      {/* Share Form (only for owner) */}
+      {/* Share Form */}
       {role === 'owner' && (
         <div className="mt-6 border-t pt-4 space-y-4">
           <h2 className="text-base font-semibold">Share this note</h2>
