@@ -10,13 +10,14 @@ interface Props {
 
 export default function ProtectedLayout({ children }: Props) {
   const router = useRouter()
-  const token = useAuthStore((s) => s.isAuthenticated)
+  const hasHydrated = useAuthStore((state) => state.hasHydrated)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   useEffect(() => {
-    if (!token) {
-      router.push('/sign-in') 
+    if (hasHydrated && isAuthenticated) {
+      router.replace('/notes')
     }
-  }, [token, router])
+  }, [hasHydrated, isAuthenticated, router])
 
   return <>{children}</>
 }
