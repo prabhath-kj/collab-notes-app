@@ -1,15 +1,23 @@
 import mongoose, { Schema, models } from "mongoose";
+import { Types } from "mongoose";
 
-export interface INote extends Document {
+
+export interface ISharedWith {
+  userId: Types.ObjectId;
+  role: "editor" | "viewer";
+}
+
+export interface INote {
+  _id: Types.ObjectId;
   title: string;
   content: string;
-  owner: Schema.Types.ObjectId;
-  collaborators: Schema.Types.ObjectId[];
-  sharedWith: {
-    userId: Schema.Types.ObjectId
-    role: 'editor' | 'viewer'
-  }[]
+  owner: Types.ObjectId;
+  collaborators: Types.ObjectId[];
+  sharedWith: ISharedWith[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
 
 const noteSchema = new Schema<INote>(
   {
@@ -23,7 +31,6 @@ const noteSchema = new Schema<INote>(
       },
     ],
 
-    collaborators: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

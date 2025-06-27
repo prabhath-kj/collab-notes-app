@@ -5,7 +5,9 @@ export interface Note {
   title: string
   content?: string
   updatedAt: string
+  role: 'owner' | 'editor' | 'viewer'
 }
+
 
 interface NotesStore {
   notes: Note[]
