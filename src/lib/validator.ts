@@ -25,7 +25,19 @@ export const UserSignUpSchema = z.object({
   password: Password,
 });
 
+export const NoteCreateSchema = z.object({
+  title: z.string().min(1, "Title is required").max(100, "Title too long"),
+})
 
+export const NoteUpdateSchema = z.object({
+  title: z.string().min(1, "Title is required").max(100, "Title too long"),
+  content: z.string().min(1, "Content is required"),
+})
+
+export const NoteShareSchema = z.object({
+  recipientEmail: z.string().email("Invalid email"),
+  role: z.enum(["editor", "viewer"]),
+})
 
 
 
